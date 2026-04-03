@@ -13,7 +13,7 @@ int main() {
     }
 
     cvNamedWindow("MotionKeys", CV_WINDOW_AUTOSIZE);
-    IplImage* frame = cvQueryFrame(cap);
+    IplImage* frame = (IplImage*)cvQueryFrame(cap);
     int fw = frame->width;
     int fh = frame->height;
 
@@ -26,11 +26,10 @@ int main() {
     int last_key = -1;
 
     printf("MotionKeys Ready!\n");
-    printf("R=Record  T=Stop Recording  P=Playback\n");
-    printf("S=Save Melody  Q=Quit\n");
+    printf("R=Record  T=Stop  P=Playback  S=Save  Q=Quit\n");
 
     while (1) {
-        frame = cvQueryFrame(cap);
+        frame = (IplImage*)cvQueryFrame(cap);
         if (!frame) break;
 
         int i;
@@ -38,7 +37,7 @@ int main() {
             cvRectangle(frame,
                 cvPoint(keys[i].x1, keys[i].y1),
                 cvPoint(keys[i].x2, keys[i].y2),
-                CV_RGB(0, 150, 200), 2, 8, 0);
+                cvScalar(200, 150, 0, 0), 2, 8, 0);
         }
 
         Fingertip tip = detectFingertip(frame);
@@ -46,7 +45,7 @@ int main() {
         if (tip.found) {
             cvCircle(frame,
                 cvPoint(tip.x, tip.y),
-                10, CV_RGB(255, 200, 0), -1, 8, 0);
+                10, cvScalar(0, 200, 255, 0), -1, 8, 0);
 
             int key_idx = detectKey(tip.x, tip.y);
 
@@ -54,7 +53,7 @@ int main() {
                 cvRectangle(frame,
                     cvPoint(keys[key_idx].x1, keys[key_idx].y1),
                     cvPoint(keys[key_idx].x2, keys[key_idx].y2),
-                    CV_RGB(0, 255, 100), -1, 8, 0);
+                    cvScalar(100, 255, 0, 0), -1, 8, 0);
 
                 playNote(key_idx);
 
