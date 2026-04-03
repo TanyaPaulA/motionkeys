@@ -3,7 +3,7 @@ CFLAGS = $(shell pkg-config --cflags opencv4)
 LIBS = $(shell pkg-config --libs opencv4)
 
 all:
-	$(CC) src/main.c src/piano.c src/detector.c src/recorder.c -o motionkeys $(CFLAGS) $(LIBS)
+	$(CC) src/main.c src/piano.c src/detector.c src/recorder.c -o motionkeys.exe $(CFLAGS) $(LIBS)
 
 clean:
 	rm -f motionkeys
