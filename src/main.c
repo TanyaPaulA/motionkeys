@@ -1,21 +1,22 @@
 #include <stdio.h>
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/opencv.hpp>
 #include "piano.h"
 #include "detector.h"
 #include "recorder.h"
 
+using namespace cv;
+
 int main() {
-    CvCapture* cap = cvCreateCameraCapture(0);
-    if (!cap) {
+    VideoCapture cap(0);
+    if (!cap.isOpened()) {
         printf("Cannot open camera\n");
         return 1;
     }
 
-    cvNamedWindow("MotionKeys", CV_WINDOW_AUTOSIZE);
-    IplImage* frame = (IplImage*)cvQueryFrame(cap);
-    int fw = frame->width;
-    int fh = frame->height;
+    namedWindow("MotionKeys", WINDOW_AUTOSIZE);
+
+    int fw = (int)cap.get(CAP_PROP_FRAME_WIDTH);
+    int fh = (int)cap.get(CAP_PROP_FRAME_HEIGHT);
 
     initKeys(fw, fh);
 
@@ -28,32 +29,35 @@ int main() {
     printf("MotionKeys Ready!\n");
     printf("R=Record  T=Stop  P=Playback  S=Save  Q=Quit\n");
 
+    Mat frame;
     while (1) {
-        frame = (IplImage*)cvQueryFrame(cap);
-        if (!frame) break;
+        cap >> frame;
+        if (frame.empty()) break;
 
         int i;
         for (i = 0; i < NUM_KEYS; i++) {
-            cvRectangle(frame,
-                cvPoint(keys[i].x1, keys[i].y1),
-                cvPoint(keys[i].x2, keys[i].y2),
-                cvScalar(200, 150, 0, 0), 2, 8, 0);
+            rectangle(frame,
+                Point(keys[i].x1, keys[i].y1),
+                Point(keys[i].x2, keys[i].y2),
+                Scalar(200, 150, 0), 2);
         }
 
-        Fingertip tip = detectFingertip(frame);
+        // Convert Mat to IplImage for detector
+        IplImage iplFrame = cvIplImage(frame);
+        Fingertip tip = detectFingertip(&iplFrame);
 
         if (tip.found) {
-            cvCircle(frame,
-                cvPoint(tip.x, tip.y),
-                10, cvScalar(0, 200, 255, 0), -1, 8, 0);
+            circle(frame,
+                Point(tip.x, tip.y),
+                10, Scalar(0, 200, 255), -1);
 
             int key_idx = detectKey(tip.x, tip.y);
 
             if (key_idx >= 0 && key_idx != last_key) {
-                cvRectangle(frame,
-                    cvPoint(keys[key_idx].x1, keys[key_idx].y1),
-                    cvPoint(keys[key_idx].x2, keys[key_idx].y2),
-                    cvScalar(100, 255, 0, 0), -1, 8, 0);
+                rectangle(frame,
+                    Point(keys[key_idx].x1, keys[key_idx].y1),
+                    Point(keys[key_idx].x2, keys[key_idx].y2),
+                    Scalar(100, 255, 0), -1);
 
                 playNote(key_idx);
 
@@ -68,9 +72,9 @@ int main() {
             last_key = -1;
         }
 
-        cvShowImage("MotionKeys", frame);
+        imshow("MotionKeys", frame);
 
-        int key = cvWaitKey(10);
+        int key = waitKey(10);
         if      (key == (int)'q') break;
         else if (key == (int)'r') startRecording(&session);
         else if (key == (int)'t') stopRecording(&session);
@@ -78,7 +82,7 @@ int main() {
         else if (key == (int)'s') exportMelody(&session, "melody.txt");
     }
 
-    cvReleaseCapture(&cap);
-    cvDestroyAllWindows();
+    cap.release();
+    destroyAllWindows();
     return 0;
 }
